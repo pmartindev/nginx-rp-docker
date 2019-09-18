@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+     parameters {
+        booleanParam(name: 'Deploy',
+            defaultValue: false,
+            description: 'option true to upload the artifacts to Dev and trigger the code pipeline deployment.'
+        )
+        string(name: 'Branch', defaultValue: 'master', description: 'The branch to build')
+    }
+    options {
+        gitLabConnection('git.sami.int.thomsonreuters.com')
+    }
+    environment {
+        appName = "DS"
+        bamsCredsId = "aaa-as-bams-service-credential"
+        gitCredsId = "aaa-as-gitlab-service-credential"
+        gitRepoURL = "git@git.sami.int.thomsonreuters.com:aaa-as/directory-server-devops.git"
+        infraGitBranch = "master"
+        gitBranch = "master"
+        generateReleaseNotes = "true"
+        pushInfra = "true"
+        pushImage = "true"        
+        runAnalysis = "true"
+		bamsURL = "https://bams-aws.refinitiv.com/artifactory/default.generic.global"
+		majorMinorVersion = "${Branch}"
+        buildNumber = "$env.BUILD_NUMBER"
+		dsBAMSRepo = "aaa/access-service/release/ds-dev"
+        artifactsVersion = "1.0" + "." + "$buildNumber"
+        dsBAMSTag = "${bamsURL}/${dsBAMSRepo}/${artifactsVersion}/"
+       	assumedRole = "a201868-ds-deployment-role"
+		assumedRoleAccount = "653551970210"
+    }
+    triggers {
+        gitlab( triggerOnPush: true, 
+                triggerOnMergeRequest: true, 
+                branchFilterType: 'NameBasedFilter',
+                skipWorkInProgressMergeRequest: true,
+                ciSkip: true,
+                setBuildDescription: true)
+    }
+    stages {
+        stage('Artifact Building') {
+            steps {
+                script {
+                    docker.withRegistry('https://bams-aws.refinitiv.com/artifactory/default.generic.global', 'aaa/access-service/release/ds-dev'){
+                        def docker = docker.build "cloudformation-builder"
+                        docker.push "$BUILD_NUMBER"
+                        docker.push "latest"
+                    }
+                }
+            }
+        }
+        stage('Push to BAMS') {
+            steps {
+                echo 'Testing..'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying....'
+            }
+        }
+    }
+}
