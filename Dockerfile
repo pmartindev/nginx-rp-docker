@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM nginx:latest
 
-RUN apt-get update \
- && apt-get -y install nginx
+COPY nginx-static-content /usr/share/nginx/html
+COPY ./nginx-conf/nginx.conf /etc/nginx/nginx.conf

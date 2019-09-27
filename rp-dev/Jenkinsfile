@@ -2,12 +2,6 @@ pipeline {
     agent {
         label 'master'
     }
-    options {
-        gitLabConnection('git.sami.int.thomsonreuters.com')
-        disableConcurrentBuilds()
-        timeout(time: 20, unit: 'MINUTES')
-        timestamps()
-    }
     environment {
     }
     triggers {
